@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.css" />
+    <style type="text/css">
+        .div-default
+        {
+            height: 100px;
+            cursor: pointer;
+            background: grey;
+            font-size: 80px;
+            text-align: center;
+        }
+        
+        .div-info
+        {
+            background: skyblue;
+        }
+        
+        .div-warning
+        {
+            background: orange;
+        }
+        
+        .container-game
+        {
+            background: white;
+            border: 10px solid black;
+        }
+        .horizontal
+        {
+            border-bottom: 1px solid black;
+        }
+        .vertical
+        {
+            border-left: 1px solid black;
+        }
+    </style>
+    <title>Game</title>
+</head>
+<body>
+    <div class="col-xs-12 col-md-12 container-game">
+        <div class="col-xs-6 col-md-6">
+            <div class="col-xs-4 col-md-4 div-default horizontal" data-button="1">
+                +
+            </div>
+            <div class="col-xs-4 col-md-4 horizontal vertical div-default" data-button="2">
+                +
+            </div>
+            <div class="col-xs-4 col-md-4 horizontal vertical div-default" data-button="3">
+                +
+            </div>
+            <div class="col-xs-4 col-md-4 horizontal div-default" data-button="4">
+                +
+            </div>
+            <div class="col-xs-4 col-md-4 horizontal vertical div-default" data-button="5">
+                +
+            </div>
+            <div class="col-xs-4 col-md-4 horizontal vertical div-default" data-button="6">
+                +
+            </div>
+            <div class="col-xs-4 col-md-4 div-default" data-button="7">
+                +
+            </div>
+            <div class="col-xs-4 col-md-4 vertical div-default" data-button="8">
+                +
+            </div>
+            <div class="col-xs-4 col-md-4 vertical div-default" data-button="9">
+                +
+            </div>
+        </div>
+        <div class="col-xs-6 col-md-6">
+            <button class="btn btn-danger text-center" data-process-button="reset" style="margin: 12px;">
+                Reset Game</button>
+            <button class="btn btn-danger text-center" data-process-button="clear" style="margin: 12px;">
+                Clear Score</button>
+            <br />
+            <label>
+                Timer : <span data-timer></span>
+            </label>
+            <br />
+            <label>
+                Player X Score : <span data-score-x></span>
+            </label>
+            <br />
+            <label>
+                Player O Score : <span data-score-o></span>
+            </label>
+            <br />
+            <label>
+                Points : <span>Winner gets 2 points and tie for 1.</span>
+            </label>
+        </div>
+    </div>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.1.min.js"></script>
+    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+        (function () {
+
+            var self = this;
+            self.clickCount = 0;
+            self.endMove = 8;
+            self.winCheck = 4;
+
+            self.userTracker = function () {
+                this.get = function (userName) {
+                    var score = localStorage.getItem(userName)
+                    if (score == null) {
+                        score = 0;
+                    }
+                    else {
+                        score = parseInt(score);
+                    }
+                    return score;
+                }
+                this.set = function (userName, currentScore) {
+                    var pastScore = this.get(userName);
+                    localStorage.setItem(userName, currentScore + pastScore);
+                }
+                this.clear = function () {
+                    localStorage.removeItem("x");
+                    localStorage.removeItem("o");
+                    this.update();
+                }
+                this.update = function () {
+                    $('[data-score-x]').text(self.currentUser.get("x"))
+                    $('[data-score-o]').text(self.currentUser.get("o"))
+                }
+            }
+
+            self.gameTracker = function () {
+                this.reset = function () {
+                    self.clickCount = 0;
+                    var buttons = $("[data-button]")
+                    for (var i = 0; i < buttons.length; i++) {
+                        $(buttons[i]).text("+");
+                        $(buttons[i]).removeClass("div-info")
+                        $(buttons[i]).removeClass("div-warning")
+                    }
+                }
+
+                var _getbuttonText = function (button) {
+                    var valArray = $(button).text().split('');
+                    var val = "+";
+
+                    if (valArray != undefined) {
+                        for (var i = 0; i < valArray.length; i++)
+                            if (valArray[i] === "+" || valArray[i] === "X" || valArray[i] === "O")
+                                val = valArray[i];
+
+                    }
+
+                    return val;
+                }
+
+                this.check = function (currentCount) {
+
+                    var checkConditions = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [1, 4, 7], [2, 5, 8], [3, 6, 9], [1, 5, 9], [3, 5, 7]]
+
+                    var btn =
+                    {
+                        text1: _getbuttonText($("[data-button=1]")),
+                        text2: _getbuttonText($("[data-button=2]")),
+                        text3: _getbuttonText($("[data-button=3]")),
+                        text4: _getbuttonText($("[data-button=4]")),
+                        text5: _getbuttonText($("[data-button=5]")),
+                        text6: _getbuttonText($("[data-button=6]")),
+                        text7: _getbuttonText($("[data-button=7]")),
+                        text8: _getbuttonText($("[data-button=8]")),
+                        text9: _getbuttonText($("[data-button=9]"))
+                    }
+
+                    var winner = {
+                        tie: true,
+                        name: "",
+                        progressGame: true
+                    }
+
+                    checkConditions.forEach(function (n) {
+                        if (winner.progressGame)
+                            if (btn["text" + n[0]] === btn["text" + n[1]] && btn["text" + n[1]] === btn["text" + n[2]]) {
+                                winner.tie = false;
+                                winner.name = btn["text" + n[0]];
+                                winner.progressGame = false;
+                            }
+                            else {
+                                winner.progressGame = true;
+                            }
+                    })
+
+                    if (currentCount == endMove && winner.tie) {
+                        updateTie();
+                        this.reset();
+                    }
+                    else {
+                        if (!winner.progressGame && winner.name != "+") {
+                            if (winner.tie) {
+                                updateTie();
+                            }
+                            else {
+                                if (winner.name === "X") {
+                                    self.currentUser.set("x", 2);
+                                }
+                                else {
+                                    self.currentUser.set("o", 2);
+                                }
+
+                                alert("Player " + winner.name + " wins");
+                            }
+                            this.reset();
+                        }
+                    }
+
+                    self.currentUser.update();
+                }
+            }
+
+            function updateTie() {
+                self.currentUser.set("x", 1);
+                self.currentUser.set("o", 1);
+                alert("Match Tied");
+            }
+
+            self.currentUser = new self.userTracker();
+            self.currentGame = new self.gameTracker();
+
+            self.currentUser.update();
+
+
+            $('[data-process-button="reset"]').off("click").on("click", function (e) {
+                self.currentGame.reset();
+            });
+
+            $('[data-process-button="clear"]').off("click").on("click", function (e) {
+                self.currentUser.clear();
+            });
+
+
+
+            self.seconds = 0;
+
+            setInterval(function () {
+                self.seconds = self.seconds + 1;
+                $('[data-timer]').text(checkTime(self.seconds));
+
+            }, 1000)
+
+
+            function checkTime(s) {
+                var date = new Date(null);
+                date.setSeconds(s); // specify value for SECONDS here
+                return date.toISOString().substr(11, 8);
+            }
+
+
+            $("[data-button]").off("click").on("click", function (e) {
+                if (self.clickCount == self.endMove) {
+                    self.currentGame.check(self.clickCount)
+                    self.currentGame.reset();
+                }
+                else {
+
+
+                    var currentButton = $(e.currentTarget);
+                    if (self.clickCount % 2 == 0) {
+                        currentButton.text("X");
+                        currentButton.addClass("div-info")
+                    }
+                    else {
+                        currentButton.text("O");
+                        currentButton.addClass("div-warning")
+                    }
+
+                    if (self.clickCount >= self.winCheck)
+                        self.currentGame.check(self.clickCount);
+
+                    self.clickCount++;
+                }
+            })
+
+        })();
+    </script>
+</body>
+</html>
